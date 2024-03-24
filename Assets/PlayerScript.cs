@@ -15,7 +15,7 @@ public class PlayerScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        currentHP = maxHP;
+        StartUp();
     }
 
     // Update is called once per frame
@@ -85,6 +85,11 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
+    public void StartUp()
+    {
+        currentHP = maxHP;
+        destination = transform.position;
+    }
 
     public IEnumerator Rotate()
     {

@@ -17,8 +17,7 @@ public class EnemyScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        currentHP = maxHP;
-        LookForPlayer();
+        StartUp();
     }
 
     // Update is called once per frame
@@ -52,13 +51,13 @@ public class EnemyScript : MonoBehaviour
                     }
                     else if (cross.y > 0)
                     {
-                        Debug.Log("right");
+                        Debug.Log("left");
                         targetRotation += Vector3.up * -90f;
                         startRotating = true;
                     }
                     else
                     {
-                        Debug.Log("left");
+                        Debug.Log("right");
                         targetRotation += Vector3.up * 90f;
                         startRotating = true;
                     }
@@ -84,6 +83,13 @@ public class EnemyScript : MonoBehaviour
         }
     }
 
+
+    public void StartUp()
+    {
+        currentHP = maxHP;
+        LookForPlayer();
+        destination = transform.position;
+    }
 
     public IEnumerator Rotate()
     {
