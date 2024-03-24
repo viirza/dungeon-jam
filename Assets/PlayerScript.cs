@@ -6,8 +6,11 @@ public class PlayerScript : MonoBehaviour
     public float maxHP, currentHP, DMG, SPD;
     public int cellSize;
     public Vector3 destination;
-    bool isMoving = false, isRotating = false;
-    string direction;
+    public bool isMoving = false, isRotating = false;
+    public bool startMoving = false, startRotating = false;
+    public bool smoothTransition = false;
+    public float transitionRotationSpeed = 500f;
+    Vector3 targetRotation;
 
     // Start is called before the first frame update
     void Start()
@@ -18,50 +21,55 @@ public class PlayerScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!isMoving)
+        //only accept input if player is currently not moving or rotating
+        if (!isMoving && !isRotating)
         {
             if (Input.GetKey(KeyCode.W))
             {
-                destination += transform.rotation * Vector3.forward * cellSize;
-                isMoving = true;
+                destination += transform.forward * cellSize;
+                startMoving = true;
             }
             else if (Input.GetKey(KeyCode.A))
             {
-                destination += transform.rotation * Vector3.left * cellSize;
-                isMoving = true;
+                destination -= transform.right * cellSize;
+                startMoving = true;
             }
             else if (Input.GetKey(KeyCode.S))
             {
-                destination += transform.rotation * Vector3.back * cellSize;
-                isMoving = true;
+                destination -= transform.forward * cellSize;
+                startMoving = true;
             }
             else if (Input.GetKey(KeyCode.D))
             {
-                destination += transform.rotation * Vector3.right * cellSize;
-                isMoving = true;
+                destination += transform.right * cellSize;
+                startMoving = true;
             }
-            else if (Input.GetKeyDown(KeyCode.Q))
+            else if (Input.GetKey(KeyCode.Q))
             {
-                if (!isRotating)
-                {
-                    StartCoroutine(Rotate(-90.0f));
-                }
+                targetRotation += Vector3.up * -90f;
+                startRotating = true;
             }
-            else if (Input.GetKeyDown(KeyCode.E))
+            else if (Input.GetKey(KeyCode.E))
             {
-                if (!isRotating)
-                {
-                    StartCoroutine(Rotate(90.0f));
-                }
+                targetRotation += Vector3.up * 90f;
+                startRotating = true;
             }
         }
 
-        if (isMoving)
+        //making sure that the player is only moving or rotating
+        if (startMoving && !isMoving)
         {
-            //make sure a movement input is there and the coroutine is not running already
-            StartCoroutine(Movement(transform.position, destination));
+            startMoving = false;
+            StartCoroutine(Movement());
+        }
+        else if (startRotating && !isRotating)
+        {
+            startRotating = false;
+            StartCoroutine(Rotate());
         }
 
+
+        //attack
         if (Input.GetKeyDown(KeyCode.Space))
         {
             RaycastHit hit;
@@ -78,36 +86,33 @@ public class PlayerScript : MonoBehaviour
     }
 
 
-    public IEnumerator Rotate(float targetRotation)
+    public IEnumerator Rotate()
     {
-        //it rotates but not exactly on 90 degrees increment for some reason
         isRotating = true;
-        float duration = 0.5f;
-        float timeElapsed = 0;
-        Quaternion originalRotation = transform.rotation;
-        Quaternion finalRotation = Quaternion.Euler(0, targetRotation, 0) * originalRotation;
-        Debug.Log(finalRotation);
-
-        while (transform.rotation != finalRotation)
+        if (targetRotation.y > 270f && targetRotation.y < 361f)
         {
-            transform.rotation = Quaternion.Slerp(originalRotation, finalRotation, timeElapsed/duration);
-            timeElapsed += Time.deltaTime;
+            targetRotation.y = 0f;
+        }
+        if (targetRotation.y < 0f)
+        {
+            targetRotation.y = 270f;
+        }
+
+        while (transform.eulerAngles != targetRotation)
+        {
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(targetRotation), Time.deltaTime * transitionRotationSpeed);
             yield return null;
         }
-        
         isRotating = false;
     }
 
-    //thank you stack overflow for this code
-    public IEnumerator Movement(Vector3 origin, Vector3 destination)
+
+    public IEnumerator Movement()
     {
         isMoving = true;
-        float totalMovementTime = SPD; //the amount of time you want the movement to take
-        float currentMovementTime = 0f;//The amount of time that has passed
         while (Vector3.Distance(transform.position, destination) > 0)
         {
-            currentMovementTime += Time.deltaTime;
-            transform.localPosition = Vector3.Lerp(origin, destination, currentMovementTime / totalMovementTime);
+            transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * SPD);
             yield return null;
         }
         isMoving = false;
