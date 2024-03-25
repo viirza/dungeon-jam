@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class EnemyScript : MonoBehaviour
 {
-    public float maxHP, currentHP, DMG, SPD;
+    public float DMG, SPD;
     public int cellSize;
     public Vector3 destination;
     public GameObject player;
@@ -86,7 +86,6 @@ public class EnemyScript : MonoBehaviour
 
     public void StartUp()
     {
-        currentHP = maxHP;
         LookForPlayer();
         destination = transform.position;
     }
@@ -124,23 +123,6 @@ public class EnemyScript : MonoBehaviour
     }
 
 
-    public void UpdateHP(float modBy)
-    {
-        //make sure hp doesnt go over the max and kill the player when it reaches 0
-        if (currentHP + modBy <= 0)
-        {
-            transform.DetachChildren();
-            Destroy(gameObject);
-        }
-        else if (currentHP + modBy > maxHP)
-        {
-            currentHP = maxHP;
-        }
-        else
-        {
-            currentHP += modBy;
-        }
-    }
 
     public void Attack()
     {
@@ -150,12 +132,11 @@ public class EnemyScript : MonoBehaviour
         {
             if (hit.collider.gameObject.tag == "Player")
             {
-                PlayerScript ps = hit.collider.GetComponent<PlayerScript>();
-                ps.UpdateHP(-DMG);
+                HealthComponent healthComponent = hit.collider.GetComponent<HealthComponent>();
+                healthComponent.UpdateHP(-DMG);
             }
         }
     }
-
 
     public void LookForPlayer()
     {

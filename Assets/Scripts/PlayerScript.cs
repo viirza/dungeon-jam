@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerScript : MonoBehaviour
 {
-    public float maxHP, currentHP, DMG, SPD;
+    public float SPD, DMG;
     public int cellSize;
     public Vector3 destination;
     public bool isMoving = false, isRotating = false;
@@ -78,8 +78,8 @@ public class PlayerScript : MonoBehaviour
             {
                 if(hit.collider.gameObject.tag == "Enemy")
                 {
-                    EnemyScript es = hit.collider.GetComponent<EnemyScript>();
-                    es.UpdateHP(-DMG);
+                    HealthComponent healthComponent = hit.collider.GetComponent<HealthComponent>();
+                    healthComponent.UpdateHP(-DMG);
                 }
             }
         }
@@ -87,8 +87,7 @@ public class PlayerScript : MonoBehaviour
 
     public void StartUp()
     {
-        currentHP = maxHP;
-        destination = transform.position;
+        destination = Vector3Int.RoundToInt(transform.position);
     }
 
     public IEnumerator Rotate()
@@ -123,23 +122,5 @@ public class PlayerScript : MonoBehaviour
         isMoving = false;
     }
 
-
-    public void UpdateHP(float modBy)
-    {
-        //make sure hp doesnt go over the max and kill the player when it reaches 0
-        if(currentHP + modBy <= 0)
-        {
-            transform.DetachChildren();
-            Destroy(gameObject);
-        }
-        else if(currentHP + modBy > maxHP)
-        {
-            currentHP = maxHP;
-        }
-        else
-        {
-            currentHP += modBy;
-        }
-    }
 }
 // Testing for any changes in Github
