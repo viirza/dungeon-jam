@@ -1,17 +1,24 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.Tilemaps;
+using static UnityEngine.GraphicsBuffer;
 
 public class EnemyScript : MonoBehaviour
 {
     public float maxHP, currentHP, DMG, SPD;
     public int cellSize;
-    public Vector3 destination;
+    public Vector3 destination, gridDestination;
     public GameObject player;
     public bool isMoving = false, isRotating = false;
     public bool startMoving = false, startRotating = false;
     public bool smoothTransition = false;
     public float transitionRotationSpeed = 500f;
+    public AudioSource footSteps;
+    public Tilemap floorTileMap;
     Vector3 targetRotation, delta, cross;
 
     // Start is called before the first frame update
@@ -25,21 +32,24 @@ public class EnemyScript : MonoBehaviour
     {
         if (player != null)
         {
-            //if enemy is not in range go towards
-            if (Mathf.Abs(Vector3.Distance(player.transform.position, transform.position)) > cellSize)
+            if (!isMoving && !isRotating)
             {
-                if (!isMoving && !isRotating)
+                //if distance
+
+                if (Mathf.Abs(player.transform.position.z - transform.position.z) > float.Epsilon)
                 {
                     delta = (player.transform.position - transform.position).normalized;
                     cross = Vector3.Cross(delta, transform.forward);
                     if (cross == Vector3.zero)
                     {
                         Vector3 toTarget = (player.transform.position - transform.position).normalized;
-
-                        if (Vector3.Dot(toTarget, transform.forward) > 0)
+                        //if the enemy is facing towards player
+                        if (Vector3.Dot(toTarget, transform.forward) == 1)
                         {
                             Debug.Log("forward");
                             destination += transform.forward * cellSize;
+                            gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
+                            destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);//get center of cell and make sure it only moves forward/backwards or left/right
                             startMoving = true;
                         }
                         else
@@ -88,7 +98,10 @@ public class EnemyScript : MonoBehaviour
     {
         currentHP = maxHP;
         LookForPlayer();
+        transform.position = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(transform.position));
+        transform.position = new Vector3(transform.position.x, 1.5f, transform.position.y);
         destination = transform.position;
+
     }
 
     public IEnumerator Rotate()
@@ -114,12 +127,14 @@ public class EnemyScript : MonoBehaviour
 
     public IEnumerator Movement()
     {
+        footSteps.Play();
         isMoving = true;
         while (Vector3.Distance(transform.position, destination) > 0)
         {
             transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * SPD);
             yield return null;
         }
+        footSteps.Stop();
         isMoving = false;
     }
 
@@ -156,6 +171,10 @@ public class EnemyScript : MonoBehaviour
         }
     }
 
+    public void Pathing(Vector3Int cameFrom, Vector3Int current)
+    {
+
+    }
 
     public void LookForPlayer()
     {

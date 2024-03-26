@@ -1,16 +1,19 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class PlayerScript : MonoBehaviour
 {
     public float maxHP, currentHP, DMG, SPD;
     public int cellSize;
-    public Vector3 destination;
+    public Vector3 destination, gridDestination;
     public bool isMoving = false, isRotating = false;
     public bool startMoving = false, startRotating = false;
     public bool isDestinationBlocked = false;
     public bool smoothTransition = false;
     public float transitionRotationSpeed = 500f;
+    public AudioSource footSteps;
+    public Tilemap floorTileMap;
     Vector3 targetRotation;
 
     // Start is called before the first frame update
@@ -25,11 +28,15 @@ public class PlayerScript : MonoBehaviour
         //only accept input if player is currently not moving or rotating
         if (!isMoving && !isRotating)
         {
+            //movement check is disabled and somethings the destination is diagonal for some reason
             if (Input.GetKey(KeyCode.W))
             {
                 if (!MovementCheck(destination + transform.forward * cellSize))
                 {
+                    Debug.Log("forward");
                     destination += transform.forward * cellSize;
+                    gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
+                    destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);//get center of cell and make sure it only moves forward/backwards or left/right
                     startMoving = true;
                 }
             }
@@ -37,7 +44,10 @@ public class PlayerScript : MonoBehaviour
             {
                 if (!MovementCheck(destination - transform.right * cellSize))
                 {
+                    Debug.Log("left");
                     destination -= transform.right * cellSize;
+                    gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
+                    destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);
                     startMoving = true;
                 }
             }
@@ -45,7 +55,10 @@ public class PlayerScript : MonoBehaviour
             {
                 if (!MovementCheck(destination - transform.forward * cellSize))
                 {
+                    Debug.Log("back");
                     destination -= transform.forward * cellSize;
+                    gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
+                    destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);
                     startMoving = true;
                 }
             }
@@ -53,7 +66,10 @@ public class PlayerScript : MonoBehaviour
             {
                 if (!MovementCheck(destination + transform.right * cellSize))
                 {
+                    Debug.Log("right");
                     destination += transform.right * cellSize;
+                    gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
+                    destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);
                     startMoving = true;
                 }
             }
@@ -102,12 +118,13 @@ public class PlayerScript : MonoBehaviour
     public bool MovementCheck(Vector3 direction)
     {
         RaycastHit hit;
-
         if (Physics.Raycast(transform.position, transform.TransformDirection(direction), out hit, 1))
         {
             if (hit.collider.gameObject.tag == "Obstacle" || hit.collider.gameObject.tag == "Enemy")
             {
-                return true;
+                return false;
+                //return true;
+                //disabled the true check for now since it's kinda broken
             }
             else
             {
@@ -123,12 +140,16 @@ public class PlayerScript : MonoBehaviour
     public void StartUp()
     {
         currentHP = maxHP;
+        footSteps = transform.GetComponent<AudioSource>();
+        transform.position = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(transform.position));
+        transform.position = new Vector3(transform.position.x, 1.5f, transform.position.y); //puts object to the center of cell except for the y position
         destination = transform.position;
     }
 
     public IEnumerator Rotate()
     {
         isRotating = true;
+        footSteps.Play();
         if (targetRotation.y > 270f && targetRotation.y < 361f)
         {
             targetRotation.y = 0f;
@@ -143,6 +164,7 @@ public class PlayerScript : MonoBehaviour
             transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(targetRotation), Time.deltaTime * transitionRotationSpeed);
             yield return null;
         }
+        footSteps.Stop();
         isRotating = false;
     }
 
@@ -150,11 +172,13 @@ public class PlayerScript : MonoBehaviour
     public IEnumerator Movement()
     {
         isMoving = true;
+        footSteps.Play();
         while (Vector3.Distance(transform.position, destination) > 0)
         {
             transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * SPD);
             yield return null;
         }
+        footSteps.Stop();
         isMoving = false;
     }
 
