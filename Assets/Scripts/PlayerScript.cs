@@ -8,6 +8,7 @@ public class PlayerScript : MonoBehaviour
     public Vector3 destination;
     public bool isMoving = false, isRotating = false;
     public bool startMoving = false, startRotating = false;
+    public bool isDestinationBlocked = false;
     public bool smoothTransition = false;
     public float transitionRotationSpeed = 500f;
     Vector3 targetRotation;
@@ -26,23 +27,35 @@ public class PlayerScript : MonoBehaviour
         {
             if (Input.GetKey(KeyCode.W))
             {
-                destination += transform.forward * cellSize;
-                startMoving = true;
+                if (!MovementCheck(destination + transform.forward * cellSize))
+                {
+                    destination += transform.forward * cellSize;
+                    startMoving = true;
+                }
             }
             else if (Input.GetKey(KeyCode.A))
             {
-                destination -= transform.right * cellSize;
-                startMoving = true;
+                if (!MovementCheck(destination - transform.right * cellSize))
+                {
+                    destination -= transform.right * cellSize;
+                    startMoving = true;
+                }
             }
             else if (Input.GetKey(KeyCode.S))
             {
-                destination -= transform.forward * cellSize;
-                startMoving = true;
+                if (!MovementCheck(destination - transform.forward * cellSize))
+                {
+                    destination -= transform.forward * cellSize;
+                    startMoving = true;
+                }
             }
             else if (Input.GetKey(KeyCode.D))
             {
-                destination += transform.right * cellSize;
-                startMoving = true;
+                if (!MovementCheck(destination + transform.right * cellSize))
+                {
+                    destination += transform.right * cellSize;
+                    startMoving = true;
+                }
             }
             else if (Input.GetKey(KeyCode.Q))
             {
@@ -82,6 +95,28 @@ public class PlayerScript : MonoBehaviour
                     es.UpdateHP(-DMG);
                 }
             }
+        }
+    }
+
+    //checks if the destination is blocked by an obstacle or enemy
+    public bool MovementCheck(Vector3 direction)
+    {
+        RaycastHit hit;
+
+        if (Physics.Raycast(transform.position, transform.TransformDirection(direction), out hit, 1))
+        {
+            if (hit.collider.gameObject.tag == "Obstacle" || hit.collider.gameObject.tag == "Enemy")
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
         }
     }
 
