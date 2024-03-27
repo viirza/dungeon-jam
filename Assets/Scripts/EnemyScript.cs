@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyScript : MonoBehaviour
+public class EnemyController : MonoBehaviour
 {
-    public float DMG, SPD;
+    public float SPD;
     public int cellSize;
     public Vector3 destination;
     public GameObject player;
@@ -126,16 +126,8 @@ public class EnemyScript : MonoBehaviour
 
     public void Attack()
     {
-        RaycastHit hit;
-
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, 1))
-        {
-            if (hit.collider.gameObject.tag == "Player")
-            {
-                HealthComponent healthComponent = hit.collider.GetComponent<HealthComponent>();
-                healthComponent.UpdateHP(-DMG);
-            }
-        }
+        AttackComponent attackComponent = gameObject.GetComponent<AttackComponent>();
+        attackComponent.Attack();
     }
 
     public void LookForPlayer()

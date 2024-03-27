@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class PlayerScript : MonoBehaviour
+public class PlayerController : MonoBehaviour
 {
     public float SPD, DMG;
     public int cellSize;
@@ -72,16 +72,8 @@ public class PlayerScript : MonoBehaviour
         //attack
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            RaycastHit hit;
-
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, 1))
-            {
-                if(hit.collider.gameObject.tag == "Enemy")
-                {
-                    HealthComponent healthComponent = hit.collider.GetComponent<HealthComponent>();
-                    healthComponent.UpdateHP(-DMG);
-                }
-            }
+            AttackComponent attackComponent = GetComponent<AttackComponent>();
+            attackComponent.Attack();
         }
     }
 
@@ -123,4 +115,3 @@ public class PlayerScript : MonoBehaviour
     }
 
 }
-// Testing for any changes in Github
