@@ -20,6 +20,7 @@ public class PlayerScript : MonoBehaviour
     void Start()
     {
         StartUp();
+        Cursor.visible = true;
     }
 
     // Update is called once per frame
@@ -28,13 +29,11 @@ public class PlayerScript : MonoBehaviour
         //only accept input if player is currently not moving or rotating
         if (!isMoving && !isRotating)
         {
-            //movement check is disabled and somethings the destination is diagonal for some reason
             if (Input.GetKey(KeyCode.W))
             {
-                if (!MovementCheck(destination + transform.forward * cellSize))
+                if (CheckDirection(transform.forward * cellSize))
                 {
-                    Debug.Log("forward");
-                    destination += transform.forward * cellSize;
+                    destination += RoundingWorkaround(transform.forward * cellSize);
                     gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
                     destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);//get center of cell and make sure it only moves forward/backwards or left/right
                     startMoving = true;
@@ -42,10 +41,9 @@ public class PlayerScript : MonoBehaviour
             }
             else if (Input.GetKey(KeyCode.A))
             {
-                if (!MovementCheck(destination - transform.right * cellSize))
+                if (CheckDirection(-transform.right * cellSize))
                 {
-                    Debug.Log("left");
-                    destination -= transform.right * cellSize;
+                    destination -= RoundingWorkaround(transform.right * cellSize);
                     gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
                     destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);
                     startMoving = true;
@@ -53,10 +51,9 @@ public class PlayerScript : MonoBehaviour
             }
             else if (Input.GetKey(KeyCode.S))
             {
-                if (!MovementCheck(destination - transform.forward * cellSize))
+                if (CheckDirection(-transform.forward * cellSize))
                 {
-                    Debug.Log("back");
-                    destination -= transform.forward * cellSize;
+                    destination -= RoundingWorkaround(transform.forward * cellSize);
                     gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
                     destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);
                     startMoving = true;
@@ -64,10 +61,9 @@ public class PlayerScript : MonoBehaviour
             }
             else if (Input.GetKey(KeyCode.D))
             {
-                if (!MovementCheck(destination + transform.right * cellSize))
+                if (CheckDirection(transform.right * cellSize))
                 {
-                    Debug.Log("right");
-                    destination += transform.right * cellSize;
+                    destination += RoundingWorkaround(transform.right * cellSize);
                     gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
                     destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);
                     startMoving = true;
@@ -114,27 +110,38 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
-    //checks if the destination is blocked by an obstacle or enemy
-    public bool MovementCheck(Vector3 direction)
+    public Vector3 RoundingWorkaround(Vector3 toRound)
     {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, transform.TransformDirection(direction), out hit, 1))
+        float x = toRound.x;
+        float y = toRound.y;
+        float z = toRound.z;
+
+        if(x < 0)
         {
-            if (hit.collider.gameObject.tag == "Obstacle" || hit.collider.gameObject.tag == "Enemy")
-            {
-                return false;
-                //return true;
-                //disabled the true check for now since it's kinda broken
-            }
-            else
+            x = Mathf.Ceil(x);
+        }
+        if (y < 0)
+        {
+            y = Mathf.Ceil(y);
+        }
+        if (z < 0)
+        {
+            z = Mathf.Ceil(z);
+        }
+
+        return new Vector3(x, y, z);
+    }
+
+    public bool CheckDirection(Vector3 direction)
+    {
+        if (Physics.Raycast(transform.position, direction, out RaycastHit hitInfo, cellSize))
+        {
+            if (hitInfo.collider.CompareTag("Obstacle"))
             {
                 return false;
             }
         }
-        else
-        {
-            return false;
-        }
+        return true;
     }
 
     public void StartUp()
