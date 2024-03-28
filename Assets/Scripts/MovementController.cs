@@ -4,8 +4,7 @@ using UnityEngine;
 public class MovementController : MonoBehaviour
 {
     public bool smoothTransition = false;
-    public bool smoothMovement = false;
-    [SerializeField] private float speed = 3f;
+    [SerializeField] private float transitionSpeed = 3f;
     [SerializeField] private float detectionRadius = 1f;
     [SerializeField] private LayerMask collisionMask = 0;
     [SerializeField] private float transitionRotationSpeed = 500f;
@@ -20,7 +19,7 @@ public class MovementController : MonoBehaviour
         {
 
             if ((Vector3.Distance(transform.position, targetPosition) < Mathf.Epsilon) &&
-                (Vector3.Distance(transform.eulerAngles, targetRotation) < Mathf.Epsilon))
+                (Vector3.Distance(transform.eulerAngles, targetRotation) < 0.05f))
                 return true;
             else
                 return false;
@@ -40,14 +39,9 @@ public class MovementController : MonoBehaviour
         return true;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        UpdateMovement();
-    }
-
     private void UpdateMovement()
     {
+
 
         if (targetRotation.y > 270f && targetRotation.y < 361f)
         {
@@ -67,44 +61,26 @@ public class MovementController : MonoBehaviour
         }
         else
         {
-            transform.position = Vector3.MoveTowards(transform.position, targetPosition, Time.deltaTime * speed);
+            transform.position = Vector3.MoveTowards(transform.position, targetPosition, Time.deltaTime * transitionSpeed);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(targetRotation), Time.deltaTime * transitionRotationSpeed);
         }
     }
-
-    public void MoveForward()
-    {
-        if (AtRest)
-        {
-            targetPosition = transform.position + Vector3.forward;
-        }
-    }
-
-    public void MoveBackward()
-    {
-        if (AtRest)
-        {
-            targetPosition = transform.position + -Vector3.forward;
-        }
-    }
-
-    public void MoveLeft()
-    {
-        if (AtRest)
-        {
-            targetPosition = transform.position + -Vector3.right;
-        }
-    }
-
-    public void MoveRight()
-    {
-        if (AtRest)
-        {
-            targetPosition = transform.position + Vector3.right;
-        }
-    }
-
+   
+    public void MoveForward() { if (AtRest) targetPosition += transform.forward; }
+    public void MoveBackward() { if (AtRest) targetPosition -= transform.forward; }
+    public void MoveLeft() { if (AtRest) targetPosition -= transform.right; }
+    public void MoveRight() { if (AtRest) targetPosition += transform.right; }
     public void TurnRight() { if (AtRest) targetRotation += Vector3.up * 90f; }
     public void TurnLeft() { if (AtRest) targetRotation += Vector3.up * -90f; }
+
+
+    void Start()
+    {
+        targetPosition = Vector3Int.RoundToInt(transform.position);
+    }
+    void FixedUpdate()
+    {
+        UpdateMovement();
+    }
 
 }
