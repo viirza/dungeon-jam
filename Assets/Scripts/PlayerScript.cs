@@ -9,10 +9,12 @@ public class PlayerScript : MonoBehaviour
     public Vector3 destination, gridDestination;
     public bool isMoving = false, isRotating = false;
     public bool startMoving = false, startRotating = false;
+    public bool isAttacking = false, canAttack = true;
+    public float attackCooldown = 1;
     public bool isDestinationBlocked = false;
     public bool smoothTransition = false;
     public float transitionRotationSpeed = 500f;
-    public AudioSource footSteps;
+    public AudioSource footSteps, attack, hurt;
     public Tilemap floorTileMap;
     Vector3 targetRotation;
 
@@ -93,19 +95,12 @@ public class PlayerScript : MonoBehaviour
             StartCoroutine(Rotate());
         }
 
-
-        //attack
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (!isMoving && !isRotating)
         {
-            RaycastHit hit;
-
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, 1))
+            //attack
+            if (Input.GetKeyDown(KeyCode.Space) && !isAttacking && canAttack)
             {
-                if(hit.collider.gameObject.tag == "Enemy")
-                {
-                    EnemyScript es = hit.collider.GetComponent<EnemyScript>();
-                    es.UpdateHP(-DMG);
-                }
+                StartCoroutine(Attack());
             }
         }
     }
@@ -141,13 +136,19 @@ public class PlayerScript : MonoBehaviour
                 return false;
             }
         }
+        if (Physics.Raycast(transform.position, direction, out RaycastHit hitInfo2, cellSize + cellSize))
+        {
+            if (hitInfo2.collider.CompareTag("Enemy"))
+            {
+                return false;
+            }
+        }
         return true;
     }
 
     public void StartUp()
     {
         currentHP = maxHP;
-        footSteps = transform.GetComponent<AudioSource>();
         transform.position = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(transform.position));
         transform.position = new Vector3(transform.position.x, 1.5f, transform.position.y); //puts object to the center of cell except for the y position
         destination = transform.position;
@@ -192,10 +193,17 @@ public class PlayerScript : MonoBehaviour
 
     public void UpdateHP(float modBy)
     {
-        //make sure hp doesnt go over the max and kill the player when it reaches 0
-        if(currentHP + modBy <= 0)
+        if (Mathf.Sign(modBy) == -1)
         {
-            transform.DetachChildren();
+            hurt.Play();
+        }
+
+        //make sure hp doesnt go over the max and kill the player when it reaches 0
+        if (currentHP + modBy <= 0)
+        {
+            Camera.main.transform.parent = null;
+            //transform.DetachChildren();
+            FindObjectOfType<gameManager>().PlayerDead();
             Destroy(gameObject);
         }
         else if(currentHP + modBy > maxHP)
@@ -206,6 +214,26 @@ public class PlayerScript : MonoBehaviour
         {
             currentHP += modBy;
         }
+    }
+
+    public IEnumerator Attack()
+    {
+        isAttacking = true;
+        attack.Play();
+        RaycastHit hit;
+
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, 1))
+        {
+            if (hit.collider.gameObject.tag == "Enemy")
+            {
+                EnemyScript es = hit.collider.GetComponent<EnemyScript>();
+                es.UpdateHP(-DMG);
+            }
+        }
+
+        yield return new WaitForSeconds(attackCooldown);
+        isAttacking = false;
+        attack.Stop();
     }
 }
 // Testing for any changes in Github

@@ -15,9 +15,11 @@ public class EnemyScript : MonoBehaviour
     public GameObject player;
     public bool isMoving = false, isRotating = false;
     public bool startMoving = false, startRotating = false;
+    public bool isAttacking = false, canAttack = true;
+    public float attackCooldown = 1;
     public bool smoothTransition = false;
     public float transitionRotationSpeed = 500f;
-    public AudioSource footSteps;
+    public AudioSource footSteps, attack, hurt;
     public Tilemap floorTileMap;
     Vector3 targetRotation, delta, cross;
 
@@ -34,9 +36,8 @@ public class EnemyScript : MonoBehaviour
         {
             if (!isMoving && !isRotating)
             {
-                //if distance
-
-                if (Mathf.Abs(player.transform.position.z - transform.position.z) > float.Epsilon)
+                //if player is further than cellsize
+                if (Mathf.Abs(player.transform.position.z - transform.position.z) > cellSize)
                 {
                     delta = (player.transform.position - transform.position).normalized;
                     cross = Vector3.Cross(delta, transform.forward);
@@ -47,7 +48,7 @@ public class EnemyScript : MonoBehaviour
                         if (Vector3.Dot(toTarget, transform.forward) == 1)
                         {
                             Debug.Log("forward");
-                            destination += transform.forward * cellSize;
+                            destination += RoundingWorkaround(transform.forward * cellSize);
                             gridDestination = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(destination));
                             destination = new Vector3(gridDestination.x, 1.5f, gridDestination.y);//get center of cell and make sure it only moves forward/backwards or left/right
                             startMoving = true;
@@ -65,12 +66,13 @@ public class EnemyScript : MonoBehaviour
                         targetRotation += Vector3.up * -90f;
                         startRotating = true;
                     }
-                    else
+                    else if(cross.y < 0)
                     {
                         Debug.Log("right");
                         targetRotation += Vector3.up * 90f;
                         startRotating = true;
                     }
+
 
                     //making sure that the player is only moving or rotating
                     if (startMoving && !isMoving)
@@ -84,15 +86,44 @@ public class EnemyScript : MonoBehaviour
                         StartCoroutine(Rotate());
                     }
                 }
+                else
+                {
+                    if (!isMoving && !isRotating)
+                    {
+                        //attack
+                        if (!isAttacking && canAttack)
+                        {
+                            StartCoroutine(Attack());
+                        }
+                    }
+                }
             }
-            else
-            {
-                Debug.Log("attack");
-                Attack();
-            }
+            
         }
     }
 
+
+    public Vector3 RoundingWorkaround(Vector3 toRound)
+    {
+        float x = toRound.x;
+        float y = toRound.y;
+        float z = toRound.z;
+
+        if (x < 0)
+        {
+            x = Mathf.Ceil(x);
+        }
+        if (y < 0)
+        {
+            y = Mathf.Ceil(y);
+        }
+        if (z < 0)
+        {
+            z = Mathf.Ceil(z);
+        }
+
+        return new Vector3(x, y, z);
+    }
 
     public void StartUp()
     {
@@ -101,7 +132,6 @@ public class EnemyScript : MonoBehaviour
         transform.position = floorTileMap.GetCellCenterLocal(Vector3Int.FloorToInt(transform.position));
         transform.position = new Vector3(transform.position.x, 1.5f, transform.position.y);
         destination = transform.position;
-
     }
 
     public IEnumerator Rotate()
@@ -141,10 +171,18 @@ public class EnemyScript : MonoBehaviour
 
     public void UpdateHP(float modBy)
     {
-        //make sure hp doesnt go over the max and kill the player when it reaches 0
+        Debug.Log("update");
+        if (Mathf.Sign(modBy) == -1)
+        {
+            Debug.Log("oof");
+
+            hurt.Play();
+        }
+        //make sure hp doesnt go over the max and kill the enemy when it reaches 0
         if (currentHP + modBy <= 0)
         {
-            transform.DetachChildren();
+            //transform.DetachChildren();
+            FindObjectOfType<gameManager>().EnemyDead();
             Destroy(gameObject);
         }
         else if (currentHP + modBy > maxHP)
@@ -157,8 +195,11 @@ public class EnemyScript : MonoBehaviour
         }
     }
 
-    public void Attack()
+
+    public IEnumerator Attack()
     {
+        isAttacking = true;
+        attack.Play();
         RaycastHit hit;
 
         if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, 1))
@@ -169,6 +210,10 @@ public class EnemyScript : MonoBehaviour
                 ps.UpdateHP(-DMG);
             }
         }
+
+        yield return new WaitForSeconds(attackCooldown);
+        isAttacking = false;
+        attack.Stop();
     }
 
     public void Pathing(Vector3Int cameFrom, Vector3Int current)
