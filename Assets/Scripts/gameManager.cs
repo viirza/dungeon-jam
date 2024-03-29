@@ -8,6 +8,7 @@ public class gameManager : MonoBehaviour
 {
     public PlayerScript player;
     public EnemyScript enemy;
+    public GameObject spawnPoint;
     public int minimumDist, maximumDist;
     public float deathTimer = 1;
 
@@ -16,7 +17,7 @@ public class gameManager : MonoBehaviour
     {
         player = FindFirstObjectByType<PlayerScript>(FindObjectsInactive.Include);
         enemy = FindFirstObjectByType<EnemyScript>(FindObjectsInactive.Include);
-
+        player.transform.position = spawnPoint.transform.position;
         //StartLevel();
     }
 
